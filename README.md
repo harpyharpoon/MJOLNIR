@@ -27,3 +27,11 @@ Provide inexperienced developers or system administrators a simple, automated to
 Development Status
 
 IN DEVELOPMENT: Core functionality like USB monitoring, file backup, hash verification, and trusted USB detection is implemented. Planned features include enhanced lockdown scripts, GitHub integration, and a configurable dashboard for security tools.
+
+
+## Upcoming Features
+
+- **Network Kill Switch:** Instantly disables all network adapters to isolate the system in an emergency.
+- **Router and Network Log Retrieval:** Automatically pulls logs from designated routers or network devices for forensic analysis.
+- **Strict Internet Access Control:** MJOLNIR will not connect to the internet unless the designated USB and NFC authentication are both present and validated.
+- **NFC Authentication:** Adds a second factor for sensitive actions, leveraging an NFC tag for physical authentication in addition to the trusted USB.
