@@ -33,3 +33,17 @@ if __name__ == "__main__":
             print("Unauthorized NFC key!")
     else:
         print("No NFC key detected within timeout.")
+
+if usb_plugged_in_wrong_port():
+    print("WARNING: Unauthorized port detected!")
+    print("Please tap your NFC security key within 30 seconds to confirm shutdown.")
+
+    nfc_id = wait_for_nfc_tap(timeout=30)
+    
+if nfc_id and nfc_id in authorized_nfc_ids:
+    print("NFC authentication successful. Proceeding with shutdown/lockdown.")
+    execute_lockdown()
+        else:
+            print("NFC authentication failed or timeout. Lockdown aborted or escalated!")
+            log_event("Failed NFC auth on trigger port event.")
+            # Optionally: proceed with lockdown anyway, or alert admin
