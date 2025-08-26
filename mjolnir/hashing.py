@@ -1,7 +1,7 @@
 import os
 import hashlib
 import json
-from .main import BASELINE_HASH_FILE, get_mandatory_files, log
+from .config import BASELINE_HASH_FILE, get_mandatory_files, log
 
 def hash_file(filepath):
     sha256 = hashlib.sha256()

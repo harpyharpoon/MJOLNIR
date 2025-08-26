@@ -7,17 +7,20 @@ import gnupg
 import hashlib
 import json
 from pykeepass import create_database, PyKeePass
+from .config import (
+    BACKUP_DIR,
+    GPG_HOME,
+    TRUSTED_KEY,
+    KEEPASS_DB,
+    KEEPASS_PASS_FILE,
+    USB_MOUNT,
+    get_mandatory_files,
+    log,
+    SETTINGS_FILE
+)
+from .hashing import hash_file, generate_baseline, compare_with_baseline
+from .usb import select_usb_port, list_usb_ports
 
-# ----------------------------
-# CONFIG
-# ----------------------------
-BACKUP_DIR = "/tmp/backups"
-USB_MOUNT = "/run/media/harpoon/C321-D197"
-GPG_HOME = "/home/harpoon/.gnupg"
-TRUSTED_KEY = "CDED 9917 B36D 9263 857B FC51 72E6 8FAE A13F 0903"  # Change this
-KEEPASS_DB = os.path.join(USB_MOUNT, "vault.kdbx")
-KEEPASS_PASS_FILE = os.path.join(USB_MOUNT, "vault_pass.gpg")
-BASELINE_HASH_FILE = os.path.join(USB_MOUNT, "baseline_hashes.json")
 
 # Quick-access programs when trusted USB is plugged in
 SECURITY_PROGRAMS = [
@@ -33,32 +36,6 @@ IMPORT_DIRS = {
     "MISC": "/home/harpoon/important/MISC"
 }
 
-# Mandatory files organized by category
-def get_mandatory_files():
-    return {
-        "DOCS": ["/etc/passwd", "/etc/shadow"],
-        "NETWORKING": [
-            "/etc/hosts",
-            "/etc/hostname",
-            "/etc/resolv.conf",
-            "/etc/fstab",
-            "/etc/network/interfaces",
-            "/etc/NetworkManager/",
-            "/etc/openvpn/",
-            "/etc/squid/",
-            "/etc/ufw/",
-            "/etc/iptables/"
-        ],
-        "MISC": [
-            "/etc/ssh/sshd_config"
-        ],
-        "LOGS": [
-            "/var/log/auth.log",
-            "/var/log/syslog",
-            "/var/log/dmesg",
-            "/var/log/kern.log"
-        ]
-    }
 
 EXPECTED_PORT = "5-9"  # Correct USB port ID
 # ----------------------------
@@ -167,3 +144,7 @@ def monitor_usb():
 
 if __name__ == "__main__":
     monitor_usb()
+    generate_baseline()
+    compare_with_baseline()
+    select_usb_port()
+    list_usb_ports()
