@@ -1,12 +1,12 @@
 import os
 import subprocess
 import time
-import pyudev
+import pyudev # type: ignore
 import shutil
-import gnupg
+import gnupg # type: ignore
 import hashlib
 import json
-from pykeepass import create_database, PyKeePass
+from pykeepass import create_database, PyKeePass # pyright: ignore[reportMissingImports]
 from .config import (
     USB_MOUNT,
     EXPECTED_PORT,
@@ -20,7 +20,7 @@ from .config import (
     SETTINGS_FILE
 )
 from .hashing import hash_file, generate_baseline, compare_with_baseline
-from .usb import select_usb_port, list_usb_ports
+from .usb import select_usb_port, select_usb_mount
 
 
 # Quick-access programs when trusted USB is plugged in
@@ -145,7 +145,7 @@ def monitor_usb():
 
 if __name__ == "__main__":
     select_usb_port()
-    list_usb_ports()
+    select_usb_mount()
     generate_baseline()
     compare_with_baseline()
     monitor_usb()
