@@ -1,16 +1,20 @@
 import os
 import json
-from .usb import SETTINGS_FILE, USB_MOUNT
+from .usb import SETTINGS_FILE
 
 with open(SETTINGS_FILE) as f:
     settings = json.load(f)
 
+USB_MOUNT = settings["USB_MOUNT"]
 BASELINE_HASH_FILE = os.path.join(USB_MOUNT, "baseline_hashes.json")
 BACKUP_DIR = "/tmp/backups"
 GPG_HOME = "/home/harpoon/.gnupg"
 TRUSTED_KEY = "CDED 9917 B36D 9263 857B FC51 72E6 8FAE A13F 0903"  # Change this
 KEEPASS_DB = os.path.join(USB_MOUNT, "vault.kdbx")
 KEEPASS_PASS_FILE = os.path.join(USB_MOUNT, "vault_pass.gpg")
+EXPECTED_PORT = settings.get("EXPECTED_PORT")
+
+
 
 
 def log(msg):

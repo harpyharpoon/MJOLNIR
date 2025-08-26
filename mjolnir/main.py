@@ -8,12 +8,13 @@ import hashlib
 import json
 from pykeepass import create_database, PyKeePass
 from .config import (
+    USB_MOUNT,
+    EXPECTED_PORT,
     BACKUP_DIR,
     GPG_HOME,
     TRUSTED_KEY,
     KEEPASS_DB,
     KEEPASS_PASS_FILE,
-    USB_MOUNT,
     get_mandatory_files,
     log,
     SETTINGS_FILE
@@ -143,8 +144,8 @@ def monitor_usb():
                 log("Device in correct port. No action taken.")
 
 if __name__ == "__main__":
-    monitor_usb()
-    generate_baseline()
-    compare_with_baseline()
     select_usb_port()
     list_usb_ports()
+    generate_baseline()
+    compare_with_baseline()
+    monitor_usb()
