@@ -12,9 +12,9 @@ from pykeepass import create_database, PyKeePass
 # CONFIG
 # ----------------------------
 BACKUP_DIR = "/tmp/backups"
-USB_MOUNT = "/media/usb"
-GPG_HOME = "/home/youruser/.gnupg"
-TRUSTED_KEY = "YOUR_GPG_KEY_FINGERPRINT"  # Change this
+USB_MOUNT = "/run/media/harpoon/C321-D197"
+GPG_HOME = "/home/harpoon/.gnupg"
+TRUSTED_KEY = "CDED 9917 B36D 9263 857B FC51 72E6 8FAE A13F 0903"  # Change this
 KEEPASS_DB = os.path.join(USB_MOUNT, "vault.kdbx")
 KEEPASS_PASS_FILE = os.path.join(USB_MOUNT, "vault_pass.gpg")
 BASELINE_HASH_FILE = os.path.join(USB_MOUNT, "baseline_hashes.json")
@@ -60,77 +60,13 @@ def get_mandatory_files():
         ]
     }
 
-EXPECTED_PORT = "1-1"  # Correct USB port ID
+EXPECTED_PORT = "5-9"  # Correct USB port ID
 # ----------------------------
 
 gpg = gnupg.GPG(homedir=GPG_HOME)
 
 def log(msg):
     print(f"[+] {msg}")
-
-# --- Hashing ---
-def hash_file(filepath):
-    sha256 = hashlib.sha256()
-    try:
-        with open(filepath, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                sha256.update(chunk)
-        return sha256.hexdigest()
-    except Exception as e:
-        log(f"[!] Could not hash {filepath}: {e}")
-        return None
-
-# Generate baseline hash list for mandatory files + dirs
-def generate_baseline():
-    hashes = {}
-    for category, files in get_mandatory_files().items():
-        hashes[category] = {}
-        for f in files:
-            if os.path.exists(f):
-                if os.path.isdir(f):
-                    # Hash each file in dir
-                    for root, _, filenames in os.walk(f):
-                        for fn in filenames:
-                            path = os.path.join(root, fn)
-                            hashes[category][path] = hash_file(path)
-                else:
-                    hashes[category][f] = hash_file(f)
-    with open(BASELINE_HASH_FILE, "w") as bf:
-        json.dump(hashes, bf, indent=2)
-    log(f"Baseline hashes written to {BASELINE_HASH_FILE}")
-
-# Compare current hashes with baseline
-def compare_with_baseline():
-    if not os.path.exists(BASELINE_HASH_FILE):
-        log("[!] No baseline hash file found.")
-        return
-
-    with open(BASELINE_HASH_FILE, "r") as bf:
-        baseline = json.load(bf)
-
-    mismatches = []
-    for category, files in get_mandatory_files().items():
-        for f in files:
-            if os.path.exists(f):
-                if os.path.isdir(f):
-                    for root, _, filenames in os.walk(f):
-                        for fn in filenames:
-                            path = os.path.join(root, fn)
-                            current = hash_file(path)
-                            expected = baseline.get(category, {}).get(path)
-                            if expected and current != expected:
-                                mismatches.append((path, expected, current))
-                else:
-                    current = hash_file(f)
-                    expected = baseline.get(category, {}).get(f)
-                    if expected and current != expected:
-                        mismatches.append((f, expected, current))
-    if mismatches:
-        log("[!] Hash mismatches detected:")
-        for f, exp, cur in mismatches:
-            log(f" - {f}: expected {exp}, got {cur}")
-    else:
-        log("All mandatory files match baseline.")
 
 # --- GPG Validation ---
 def verify_usb_trust():
