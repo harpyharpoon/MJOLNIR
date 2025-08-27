@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
-import pyudev # pyright: ignore[reportMissingImports]
+import pyudev 
 import os
 import json
 

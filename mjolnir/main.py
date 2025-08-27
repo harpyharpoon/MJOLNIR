@@ -20,7 +20,7 @@ from .config import (
     SETTINGS_FILE
 )
 from .hashing import hash_file, generate_baseline, compare_with_baseline
-from .usb import select_usb_port, select_usb_mount
+from .usb import select_usb_port, select_usb_mount, save_selected_settings
 
 
 # Quick-access programs when trusted USB is plugged in
@@ -144,8 +144,9 @@ def monitor_usb():
                 log("Device in correct port. No action taken.")
 
 if __name__ == "__main__":
-    select_usb_port()
-    select_usb_mount()
+    selected_port = select_usb_port()
+    selected_mount = select_usb_mount()
+    save_selected_settings(selected_port, selected_mount)
     generate_baseline()
     compare_with_baseline()
     monitor_usb()

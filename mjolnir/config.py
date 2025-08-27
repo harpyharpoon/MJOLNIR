@@ -2,6 +2,7 @@ import os
 import json
 from .usb import SETTINGS_FILE
 
+
 with open(SETTINGS_FILE) as f:
     settings = json.load(f)
 
@@ -14,8 +15,9 @@ KEEPASS_DB = os.path.join(USB_MOUNT, "vault.kdbx")
 KEEPASS_PASS_FILE = os.path.join(USB_MOUNT, "vault_pass.gpg")
 EXPECTED_PORT = settings.get("EXPECTED_PORT")
 
-
-
+def update_settings(new_settings):
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(new_settings, f, indent=2)
 
 def log(msg):
     print(f"[+] {msg}")
