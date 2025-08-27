@@ -31,3 +31,16 @@ def get_mandatory_files():
         "LOGS": []
     }
 
+def get_baseline_hash_file():
+    settings = get_settings()
+    usb_mount = settings["USB_MOUNT"]
+    return os.path.join(usb_mount, "baseline_hashes.json")
+
+def get_settings():
+    return settings
+
+def get_hash_rotation_days():
+    return get_settings().get('HASH_ROTATION_DAYS', 7) # Default is 7 days
+
+
+

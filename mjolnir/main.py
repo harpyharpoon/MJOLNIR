@@ -21,7 +21,7 @@ from .config import (
 )
 from .hashing import hash_file, generate_baseline, compare_with_baseline
 from .usb import select_usb_port, select_usb_mount, save_selected_settings
-
+from .scheduler import periodic_hash_check
 
 # Quick-access programs when trusted USB is plugged in
 SECURITY_PROGRAMS = [
@@ -149,4 +149,5 @@ if __name__ == "__main__":
     save_selected_settings(selected_port, selected_mount)
     generate_baseline()
     compare_with_baseline()
+    periodic_hash_check()
     monitor_usb()
