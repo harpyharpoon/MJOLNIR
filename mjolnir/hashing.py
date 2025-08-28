@@ -1,7 +1,7 @@
 import os
 import hashlib
 import json
-from .config import BASELINE_HASH_FILE, get_mandatory_files, log
+from .config import get_baseline_hash_file, get_mandatory_files, log
 
 def hash_file(filepath):
     sha256 = hashlib.sha256()
@@ -27,16 +27,16 @@ def generate_baseline():
                             hashes[category][path] = hash_file(path)
                 else:
                     hashes[category][f] = hash_file(f)
-    with open(BASELINE_HASH_FILE, "w") as bf:
+    with open(get_baseline_hash_file(), "w") as bf:
         json.dump(hashes, bf, indent=2)
-    log(f"Baseline hashes written to {BASELINE_HASH_FILE}")
+    log(f"Baseline hashes written to {get_baseline_hash_file()}")
 
 def compare_with_baseline():
-    if not os.path.exists(BASELINE_HASH_FILE):
+    if not os.path.exists(get_baseline_hash_file()):
         log("[!] No baseline hash file found.")
         return
 
-    with open(BASELINE_HASH_FILE, "r") as bf:
+    with open(get_baseline_hash_file(), "r") as bf:
         baseline = json.load(bf)
 
     mismatches = []

@@ -8,24 +8,21 @@ import hashlib
 import json
 from pykeepass import create_database, PyKeePass # pyright: ignore[reportMissingImports]
 from .config import (
-    USB_MOUNT,
-    EXPECTED_PORT,
     BACKUP_DIR,
     GPG_HOME,
     TRUSTED_KEY,
-    KEEPASS_DB,
-    KEEPASS_PASS_FILE,
     get_mandatory_files,
     log,
     SETTINGS_FILE
 )
+from .config import get_usb_mount, get_expected_port, get_baseline_hash_file, get_keepass_db
 from .hashing import hash_file, generate_baseline, compare_with_baseline
 from .usb import select_usb_port, select_usb_mount, save_selected_settings
 from .scheduler import periodic_hash_check
 
 # Quick-access programs when trusted USB is plugged in
 SECURITY_PROGRAMS = [
-    ["keepassxc", KEEPASS_DB],
+    ["keepassxc", get_keepass_db],
     ["firefox", "https://localhost:9090"],  # Cockpit web UI
     ["wireshark"]
 ]
@@ -48,7 +45,7 @@ def log(msg):
 
 # --- GPG Validation ---
 def verify_usb_trust():
-    pubkey_file = os.path.join(USB_MOUNT, "trusted_pubkey.asc")
+    pubkey_file = os.path.join(get_usb_mount, "trusted_pubkey.asc")
     if not os.path.exists(pubkey_file):
         log("No trusted GPG key found on USB.")
         return False
@@ -134,7 +131,7 @@ def monitor_usb():
                 if verify_usb_trust():
                     compare_with_baseline()
                     encrypted_archive = backup_files()
-                    shutil.copy(encrypted_archive, USB_MOUNT)
+                    shutil.copy(encrypted_archive, get_usb_mount)
                     launch_security_suite()
                 else:
                     log("Untrusted USB device. Skipping backup.")

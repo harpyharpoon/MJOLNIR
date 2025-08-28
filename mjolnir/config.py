@@ -6,14 +6,37 @@ from .usb import SETTINGS_FILE
 with open(SETTINGS_FILE) as f:
     settings = json.load(f)
 
-USB_MOUNT = settings["USB_MOUNT"]
-BASELINE_HASH_FILE = os.path.join(USB_MOUNT, "baseline_hashes.json")
 BACKUP_DIR = "/tmp/backups"
 GPG_HOME = "/home/harpoon/.gnupg"
 TRUSTED_KEY = "CDED 9917 B36D 9263 857B FC51 72E6 8FAE A13F 0903"  # Change this
-KEEPASS_DB = os.path.join(USB_MOUNT, "vault.kdbx")
-KEEPASS_PASS_FILE = os.path.join(USB_MOUNT, "vault_pass.gpg")
-EXPECTED_PORT = settings.get("EXPECTED_PORT")
+
+def get_settings():
+    with open(SETTINGS_FILE) as f:
+        return json.load(f)
+
+def get_usb_mount():
+    return get_settings().get("USB_MOUNT")
+
+def get_expected_port():
+    return get_settings().get("EXPECTED_PORT")
+
+def get_baseline_hash_file():
+    usb_mount = get_usb_mount()
+    if not usb_mount:
+        raise ValueError("USB_MOUNT is not set in settings.json")
+    return os.path.join(get_usb_mount, "baseline_hashes.json")
+
+def get_keepass_db():
+    usb_mount = get_usb_mount()
+    if not usb_mount:
+        raise ValueError("USB_MOUNT is not set in settings.json")
+    return os.path.join(usb_mount, "vault.kdbx")
+
+def get_keepass_pass_file():
+    usb_mount = get_usb_mount()
+    if not usb_mount:
+        raise ValueError("USB_MOUNT is not set in settings.json")
+    return os.path.join(usb_mount, "vault_pass.gpg")
 
 def update_settings(new_settings):
     with open(SETTINGS_FILE, "w") as f:
