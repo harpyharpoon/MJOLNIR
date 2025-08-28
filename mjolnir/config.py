@@ -51,8 +51,18 @@ def get_mandatory_files():
         "DOCS": ["/etc/passwd", "/etc/shadow"],
         "NETWORKING": ["/etc/hosts", "/etc/hostname", "/etc/resolv.conf", "/etc/fstab", "/etc/NetworkManager/NetworkManager.conf"],
         "MISC": ["/etc/ssh/sshd_config"],
-        "LOGS": []
+        "LOGS": [],
+        "CUSTOM": get_selected_files()
     }
+
+def get_selected_files():
+    settings = get_settings()
+    return settings.get("SELECTED_FILES", [])
+
+def set_selected_files(file_list):
+    settings = get_settings()
+    settings["SELECTED_FILES"] = file_list
+    update_settings(settings)
 
 def get_baseline_hash_file():
     settings = get_settings()

@@ -1,12 +1,12 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import threading
 from .usb_monitor import monitor_usb_events
 from mjolnir.usb import select_usb_port, select_usb_mount, save_selected_settings
 from mjolnir.hashing import generate_baseline, compare_with_baseline
 from mjolnir.scheduler import periodic_hash_check
 # from mjolnir.backup import backup_files
-from mjolnir.config import get_mandatory_files
+from mjolnir.config import get_mandatory_files, get_selected_files, set_selected_files
 from mjolnir.hashing import generate_baseline
 
 def select_usb_port_mount():
@@ -21,8 +21,24 @@ def select_usb_port_mount():
     messagebox.showinfo("USB Selection", f"Port: {selected_port}\nMount: {selected_mount} saved!")
 
 def select_files_folders():
-    # Call your file/folder selection logic here
-    messagebox.showinfo("Select Files/Folders", "File/folder selection dialog goes here.")
+    recommended = get_mandatory_files(title="Recommended files/folders to be included")
+    files = filedialog.askopenfilenames(title="Select Files/Folders for Hashing")
+    folder = filedialog.askdirectory(title="Select Folder for Hashing")
+    selected = list(files)
+    if recommended:
+        set_selected_files(recommended)
+        messagebox.showinfo("Select Files/Folders", "Recommended files/folders selected.")
+    if files:
+        set_selected_files(files)
+        messagebox.showinfo("Select Files/Folders", "File/folder selection completed.")
+    if folder:
+        set_selected_files(selected + [folder])
+        messagebox.showinfo("Select Files/Folders", "File/folder selection completed.")
+    if selected:
+        set_selected_files(selected)
+        messagebox.showinfo("Select Files/Folders", "File/folder selection completed.")
+    else:
+        messagebox.showwarning("Select Files/Folders", "No files or folders selected.")
 
 def hash_format_config():
     # Call your hash format/config logic here
