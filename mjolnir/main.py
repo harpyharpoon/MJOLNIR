@@ -1,21 +1,22 @@
 import os
 import subprocess
 import time
-import pyudev # type: ignore
+import pyudev  # type: ignore
 import shutil
-import gnupg # type: ignore
-import hashlib
-import json
-from pykeepass import create_database, PyKeePass # pyright: ignore[reportMissingImports]
+import gnupg  # type: ignore
+from pykeepass import create_database, PyKeePass  # pyright: ignore[reportMissingImports]
 from .config import (
     BACKUP_DIR,
     GPG_HOME,
     TRUSTED_KEY,
     get_mandatory_files,
     log,
-    SETTINGS_FILE
+    SETTINGS_FILE,
+    get_usb_mount,
+    get_expected_port,
+    get_baseline_hash_file,
+    get_keepass_db
 )
-from .config import get_usb_mount, get_expected_port, get_baseline_hash_file, get_keepass_db
 from .hashing import hash_file, generate_baseline, compare_with_baseline
 from .usb import select_usb_port, select_usb_mount, save_selected_settings
 from .scheduler import periodic_hash_check
@@ -34,18 +35,11 @@ IMPORT_DIRS = {
     "MISC": "/home/harpoon/important/MISC"
 }
 
-
-EXPECTED_PORT = "5-9"  # Correct USB port ID
-# ----------------------------
-
 gpg = gnupg.GPG(homedir=GPG_HOME)
-
-def log(msg):
-    print(f"[+] {msg}")
 
 # --- GPG Validation ---
 def verify_usb_trust():
-    pubkey_file = os.path.join(get_usb_mount, "trusted_pubkey.asc")
+    pubkey_file = os.path.join(get_usb_mount(), "trusted_pubkey.asc")
     if not os.path.exists(pubkey_file):
         log("No trusted GPG key found on USB.")
         return False
@@ -125,13 +119,13 @@ def monitor_usb():
 
             log(f"USB device plugged in: {device_node} at {device_port}")
 
-            if EXPECTED_PORT not in device_port:
+            if get_expected_port() not in device_port:
                 log("Device in wrong port → backup trigger.")
 
                 if verify_usb_trust():
                     compare_with_baseline()
                     encrypted_archive = backup_files()
-                    shutil.copy(encrypted_archive, get_usb_mount)
+                    shutil.copy(encrypted_archive, get_usb_mount())
                     launch_security_suite()
                 else:
                     log("Untrusted USB device. Skipping backup.")

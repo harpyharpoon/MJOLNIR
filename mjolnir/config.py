@@ -2,10 +2,6 @@ import os
 import json
 from .usb import SETTINGS_FILE
 
-
-with open(SETTINGS_FILE) as f:
-    settings = json.load(f)
-
 BACKUP_DIR = "/tmp/backups"
 GPG_HOME = "/home/harpoon/.gnupg"
 TRUSTED_KEY = "CDED 9917 B36D 9263 857B FC51 72E6 8FAE A13F 0903"  # Change this
@@ -24,7 +20,7 @@ def get_baseline_hash_file():
     usb_mount = get_usb_mount()
     if not usb_mount:
         raise ValueError("USB_MOUNT is not set in settings.json")
-    return os.path.join(get_usb_mount, "baseline_hashes.json")
+    return os.path.join(usb_mount, "baseline_hashes.json")
 
 def get_keepass_db():
     usb_mount = get_usb_mount()
@@ -64,16 +60,5 @@ def set_selected_files(file_list):
     settings["SELECTED_FILES"] = file_list
     update_settings(settings)
 
-def get_baseline_hash_file():
-    settings = get_settings()
-    usb_mount = settings["USB_MOUNT"]
-    return os.path.join(usb_mount, "baseline_hashes.json")
-
-def get_settings():
-    return settings
-
 def get_hash_rotation_days():
-    return get_settings().get('HASH_ROTATION_DAYS', 7) # Default is 7 days
-
-
-
+    return get_settings().get('HASH_ROTATION_DAYS', 7)  # Default is 7 days
