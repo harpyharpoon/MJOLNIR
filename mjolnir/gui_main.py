@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, simpledialog, ttk
 import threading
+import time
 from .usb_monitor import monitor_usb_events
 from mjolnir.usb import select_usb_port, select_usb_mount, save_selected_settings
 from mjolnir.hashing import generate_baseline, compare_with_baseline
@@ -9,18 +10,87 @@ from mjolnir.scheduler import periodic_hash_check
 from mjolnir.config import get_mandatory_files, get_selected_files, set_selected_files
 from mjolnir.hashing import generate_baseline
 
+# MJOLNIR Color Scheme
+MJOLNIR_COLORS = {
+    'bg_primary': '#1a1a2e',      # Dark blue-black
+    'bg_secondary': '#16213e',     # Darker blue
+    'accent_gold': '#eee657',      # Thor's golden accent
+    'accent_blue': '#0f3460',      # Deep blue
+    'text_light': '#ffffff',       # White text
+    'text_gold': '#eee657',        # Golden text
+    'trusted_green': '#00ff88',    # Bright green for trusted
+    'danger_red': '#ff0040',       # Bright red for danger
+    'warning_orange': '#ff8c00'    # Orange for warnings
+}
+
+def mjolnir_style_window(window):
+    """Apply MJOLNIR theme to a window."""
+    window.configure(bg=MJOLNIR_COLORS['bg_primary'])
+
+def create_mjolnir_button(parent, text, command, width=30, color_scheme='normal'):
+    """Create a MJOLNIR-themed button."""
+    if color_scheme == 'danger':
+        bg_color = MJOLNIR_COLORS['danger_red']
+        fg_color = MJOLNIR_COLORS['text_light']
+    elif color_scheme == 'success':
+        bg_color = MJOLNIR_COLORS['trusted_green']
+        fg_color = MJOLNIR_COLORS['bg_primary']
+    elif color_scheme == 'warning':
+        bg_color = MJOLNIR_COLORS['warning_orange']
+        fg_color = MJOLNIR_COLORS['bg_primary']
+    else:
+        bg_color = MJOLNIR_COLORS['accent_blue']
+        fg_color = MJOLNIR_COLORS['text_light']
+    
+    return tk.Button(parent, text=text, width=width, command=command,
+                     bg=bg_color, fg=fg_color, font=("Arial", 10, "bold"),
+                     relief="raised", bd=2, activebackground=MJOLNIR_COLORS['accent_gold'])
+
+def create_mjolnir_label(parent, text, font_size=12, text_color='light'):
+    """Create a MJOLNIR-themed label."""
+    color = MJOLNIR_COLORS['text_light'] if text_color == 'light' else MJOLNIR_COLORS['text_gold']
+    return tk.Label(parent, text=text, bg=MJOLNIR_COLORS['bg_primary'], 
+                    fg=color, font=("Arial", font_size, "bold"))
+
+def dramatic_status_update(message, delay=0.05):
+    """Update status with dramatic character reveal."""
+    def animate():
+        current_text = ""
+        for i, char in enumerate(message):
+            current_text += char
+            status_detail_label.config(text=current_text)
+            root.update()
+            time.sleep(delay)
+    
+    threading.Thread(target=animate, daemon=True).start()
+
 def select_usb_port_mount():
+    dramatic_status_update("🔨 Seeking the sacred connection points...")
+    time.sleep(1)
+    
     selected_port = select_usb_port()
     if not selected_port:
+        dramatic_status_update("❌ The realms remain unbound")
         return
+        
+    dramatic_status_update("⚡ Port chosen... Now seeking the sacred mount...")
+    time.sleep(0.5)
+    
     selected_mount = select_usb_mount()
     if not selected_mount:
+        dramatic_status_update("❌ The mount eludes us")
         return
+        
     save_selected_settings(selected_port, selected_mount)
+    dramatic_status_update("✨ Sacred bindings complete! MJOLNIR is ready!")
     # Optionally, show a message to the user
-    messagebox.showinfo("USB Selection", f"Port: {selected_port}\nMount: {selected_mount} saved!")
+    messagebox.showinfo("⚡ MJOLNIR Configuration ⚡", 
+                       f"🔨 Sacred Port: {selected_port}\n⛰️  Divine Mount: {selected_mount}\n\n✅ Configuration blessed by Thor!")
 
 def select_files_folders():
+    dramatic_status_update("🔍 Scanning the Nine Realms for precious artifacts...")
+    time.sleep(1)
+    
     # Get current mandatory files for display
     mandatory_files = get_mandatory_files()
     
@@ -32,14 +102,16 @@ def select_files_folders():
     
     if current_files:
         messagebox.showinfo(
-            "Recommended files/folders", 
-            f"Currently recommended files/folders:\n" + "\n".join(current_files[:10]) + 
-            (f"\n... and {len(current_files) - 10} more" if len(current_files) > 10 else "")
+            "🛡️  Sacred Artifacts Registry", 
+            f"⚡ Currently protected treasures:\n\n" + "\n".join(current_files[:10]) + 
+            (f"\n\n... and {len(current_files) - 10} more divine artifacts" if len(current_files) > 10 else "")
         )
     
+    dramatic_status_update("📂 Choose additional artifacts to guard...")
     # Allow user to select additional files
-    files = filedialog.askopenfilenames(title="Select Additional Files for Hashing")
-    folder = filedialog.askdirectory(title="Select Additional Folder for Hashing")
+    files = filedialog.askopenfilenames(title="🔨 Select Files Worthy of MJOLNIR's Protection")
+    dramatic_status_update("📁 Choose folders to shield from harm...")
+    folder = filedialog.askdirectory(title="⚡ Select Folder for Divine Protection")
     
     # Build combined selection
     selected = list(files)
@@ -47,56 +119,69 @@ def select_files_folders():
         selected.append(folder)
     
     if selected:
+        dramatic_status_update("✨ Consecrating new artifacts...")
+        time.sleep(1)
         # Get current custom files and add new selections
         current_custom = get_selected_files()
         # Combine and remove duplicates
         all_selected = list(set(current_custom + selected))
         set_selected_files(all_selected)
-        messagebox.showinfo("Select Files/Folders", f"Added {len(selected)} new files/folders to selection.")
+        dramatic_status_update(f"🎉 {len(selected)} new artifacts added to MJOLNIR's protection!")
+        messagebox.showinfo("⚡ Divine Protection Extended ⚡", 
+                           f"🛡️  Added {len(selected)} new treasures to the vault!\n\n✨ MJOLNIR's watch grows stronger!")
     else:
-        messagebox.showinfo("Select Files/Folders", "No additional files or folders selected.")
+        dramatic_status_update("😔 No new artifacts chosen for protection")
+        messagebox.showinfo("🔨 MJOLNIR Status 🔨", "⚡ No additional artifacts selected for divine protection")
 
 def hash_format_config():
     """Open hash format and configuration dialog."""
+    dramatic_status_update("⚙️  Opening the sacred configuration chamber...")
+    
     config_window = tk.Toplevel(root)
-    config_window.title("Hash Format & Configuration")
-    config_window.geometry("400x300")
+    config_window.title("🔨 MJOLNIR Cryptographic Configuration")
+    config_window.geometry("450x350")
     config_window.resizable(False, False)
+    mjolnir_style_window(config_window)
     
     # Make window modal
     config_window.transient(root)
     config_window.grab_set()
     
     # Hash algorithm selection
-    tk.Label(config_window, text="Hash Algorithm:", font=("Arial", 12, "bold")).pack(pady=10)
+    create_mjolnir_label(config_window, "⚡ Divine Hash Algorithm ⚡", 14).pack(pady=15)
     
     hash_var = tk.StringVar(value="SHA256")
-    hash_frame = tk.Frame(config_window)
-    hash_frame.pack(pady=5)
+    hash_frame = tk.Frame(config_window, bg=MJOLNIR_COLORS['bg_primary'])
+    hash_frame.pack(pady=10)
     
-    tk.Radiobutton(hash_frame, text="SHA256 (Recommended)", variable=hash_var, 
-                   value="SHA256", state="normal").pack(anchor="w")
-    tk.Radiobutton(hash_frame, text="SHA1 (Legacy)", variable=hash_var, 
-                   value="SHA1", state="disabled").pack(anchor="w")
-    tk.Radiobutton(hash_frame, text="MD5 (Not recommended)", variable=hash_var, 
-                   value="MD5", state="disabled").pack(anchor="w")
+    tk.Radiobutton(hash_frame, text="🔨 SHA256 (Thor's Blessing)", variable=hash_var, 
+                   value="SHA256", state="normal", bg=MJOLNIR_COLORS['bg_primary'],
+                   fg=MJOLNIR_COLORS['text_light'], selectcolor=MJOLNIR_COLORS['accent_blue']).pack(anchor="w")
+    tk.Radiobutton(hash_frame, text="⚡ SHA1 (Ancient Runes)", variable=hash_var, 
+                   value="SHA1", state="disabled", bg=MJOLNIR_COLORS['bg_primary'],
+                   fg=MJOLNIR_COLORS['text_light'], selectcolor=MJOLNIR_COLORS['accent_blue']).pack(anchor="w")
+    tk.Radiobutton(hash_frame, text="💀 MD5 (Forbidden Magic)", variable=hash_var, 
+                   value="MD5", state="disabled", bg=MJOLNIR_COLORS['bg_primary'],
+                   fg=MJOLNIR_COLORS['text_light'], selectcolor=MJOLNIR_COLORS['accent_blue']).pack(anchor="w")
     
-    tk.Label(config_window, text="Note: Currently only SHA256 is supported", 
-             fg="gray").pack(pady=5)
+    tk.Label(config_window, text="⚠️  Only SHA256 bears Thor's divine blessing", 
+             fg=MJOLNIR_COLORS['warning_orange'], bg=MJOLNIR_COLORS['bg_primary']).pack(pady=5)
     
     # Hash rotation settings
-    tk.Label(config_window, text="Hash Rotation Settings:", font=("Arial", 12, "bold")).pack(pady=(20, 10))
+    create_mjolnir_label(config_window, "🔄 Sacred Rotation Rituals", 14).pack(pady=(25, 15))
     
-    rotation_frame = tk.Frame(config_window)
-    rotation_frame.pack(pady=5)
+    rotation_frame = tk.Frame(config_window, bg=MJOLNIR_COLORS['bg_primary'])
+    rotation_frame.pack(pady=10)
     
-    tk.Label(rotation_frame, text="Days between automatic hash checks:").pack(side="left")
+    tk.Label(rotation_frame, text="Days between divine inspections:", 
+             bg=MJOLNIR_COLORS['bg_primary'], fg=MJOLNIR_COLORS['text_light']).pack(side="left")
     rotation_var = tk.StringVar(value="7")
-    rotation_entry = tk.Entry(rotation_frame, textvariable=rotation_var, width=5)
+    rotation_entry = tk.Entry(rotation_frame, textvariable=rotation_var, width=5,
+                             bg=MJOLNIR_COLORS['bg_secondary'], fg=MJOLNIR_COLORS['text_gold'])
     rotation_entry.pack(side="left", padx=(5, 0))
     
     # Baseline location
-    tk.Label(config_window, text="Configuration:", font=("Arial", 12, "bold")).pack(pady=(20, 10))
+    create_mjolnir_label(config_window, "⚙️  Divine Configuration", 14).pack(pady=(25, 15))
     
     info_text = tk.Text(config_window, height=4, width=45, wrap=tk.WORD)
     info_text.pack(pady=5)
@@ -143,34 +228,53 @@ def hash_format_config():
     tk.Button(button_frame, text="Cancel", command=config_window.destroy).pack(side="left", padx=5)
 
 def generate_hash():
+    dramatic_status_update("🔨 Awakening MJOLNIR's cryptographic powers...")
+    time.sleep(1)
+    
     selected_files = get_mandatory_files()
     if not selected_files:
-        messagebox.showwarning("Generate Hash", "No files/folders selected for hashing.")
+        dramatic_status_update("❌ No artifacts chosen for divine protection")
+        messagebox.showwarning("⚡ MJOLNIR Warning ⚡", 
+                              "🛡️  No files/folders selected for divine hashing.\n\n🔨 Please choose artifacts to protect first!")
         return
 
+    dramatic_status_update("⚡ Forging cryptographic seals of protection...")
+    countdown_timer_display(3, "Seal Creation")
+    
     try:
+        # Show progress with dramatic updates
+        dramatic_status_update("🔥 The hammer's power flows through sacred algorithms...")
+        time.sleep(2)
+        
         generate_baseline()
-        messagebox.showinfo("Generate Hash", "Hash generation completed successfully.")
+        
+        dramatic_status_update("✨ Divine protection seals have been forged! ✨")
+        messagebox.showinfo("🔨 MJOLNIR Success 🔨", 
+                           "⚡ Hash generation completed with Thor's blessing!\n\n🛡️  Your artifacts are now protected by divine cryptography!")
     except Exception as e:
-        messagebox.showerror("Generate Hash", f"Error during hash generation:\n{e}")
-
+        dramatic_status_update("💥 The forging process encountered resistance!")
+        messagebox.showerror("🔥 MJOLNIR Error 🔥", 
+                            f"⚠️  Error during divine hash forging:\n\n💀 {e}\n\n⚡ The realms require attention!")
 
 def schedule_hash_pulls():
     """Open periodic hash pull scheduler dialog."""
+    dramatic_status_update("📅 Opening the sacred calendar chamber...")
+    
     scheduler_window = tk.Toplevel(root)
-    scheduler_window.title("Schedule Periodic Hash Pulls")
-    scheduler_window.geometry("450x350")
+    scheduler_window.title("🔮 MJOLNIR Temporal Scheduling 🔮")
+    scheduler_window.geometry("500x400")
     scheduler_window.resizable(False, False)
+    mjolnir_style_window(scheduler_window)
     
     # Make window modal
     scheduler_window.transient(root)
     scheduler_window.grab_set()
     
     # Current status
-    tk.Label(scheduler_window, text="Hash Pull Scheduler", font=("Arial", 14, "bold")).pack(pady=10)
+    create_mjolnir_label(scheduler_window, "⏰ Sacred Ritual Scheduler ⏰", 16, 'gold').pack(pady=15)
     
-    status_frame = tk.Frame(scheduler_window)
-    status_frame.pack(pady=10, fill="x", padx=20)
+    status_frame = tk.Frame(scheduler_window, bg=MJOLNIR_COLORS['bg_primary'])
+    status_frame.pack(pady=15, fill="x", padx=25)
     
     # Check current status
     try:
@@ -181,17 +285,19 @@ def schedule_hash_pulls():
         last_check = get_last_hash_check()
         rotation_days = get_hash_rotation_days()
         
-        status_text = tk.Text(status_frame, height=6, wrap=tk.WORD)
+        status_text = tk.Text(status_frame, height=6, wrap=tk.WORD,
+                             bg=MJOLNIR_COLORS['bg_secondary'], fg=MJOLNIR_COLORS['text_light'],
+                             font=("Arial", 10))
         status_text.pack(fill="both", expand=True)
         
         if last_check:
             days_since = (datetime.now() - last_check).days
             next_check_in = max(0, rotation_days - days_since)
-            status_text.insert("1.0", f"Last hash check: {last_check.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            status_text.insert("end", f"Days since last check: {days_since}\n")
-            status_text.insert("end", f"Rotation interval: {rotation_days} days\n")
-            status_text.insert("end", f"Next check due in: {next_check_in} days\n")
-            status_text.insert("end", f"Status: {'Overdue' if next_check_in == 0 else 'Scheduled'}\n")
+            status_text.insert("1.0", f"⚡ Last divine inspection: {last_check.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            status_text.insert("end", f"🕐 Days since last ritual: {days_since}\n")
+            status_text.insert("end", f"⚙️  Sacred interval: {rotation_days} days\n")
+            status_text.insert("end", f"⏳ Next ritual due in: {next_check_in} days\n")
+            status_text.insert("end", f"🔮 Status: {'🔥 OVERDUE - MJOLNIR DEMANDS ACTION!' if next_check_in == 0 else '✅ Scheduled and blessed'}\n")
         else:
             status_text.insert("1.0", "No previous hash check found.\n")
             status_text.insert("end", f"Rotation interval: {rotation_days} days\n")
@@ -288,31 +394,84 @@ def schedule_hash_pulls():
 def update_usb_status(is_trusted):
     def set_status():
         if is_trusted:
-            status_label.config(text="Trusted USB Connected", bg="green", fg="white")
+            status_label.config(text="⚡ THE WORTHY HAVE RETURNED ⚡", 
+                              bg=MJOLNIR_COLORS['trusted_green'], fg=MJOLNIR_COLORS['bg_primary'])
+            dramatic_status_update("🛡️  Divine protection flows through the realm...")
         else:
-            status_label.config(text="No Trusted USB", bg="red", fg="white")
+            status_label.config(text="💀 MJOLNIR AWAITS THE WORTHY 💀", 
+                              bg=MJOLNIR_COLORS['danger_red'], fg=MJOLNIR_COLORS['text_light'])
+            dramatic_status_update("⏳ The chosen one has not yet awakened...")
     root.after(0, set_status)
+
+def countdown_timer_display(seconds, purpose="Operation"):
+    """Display a dramatic countdown in the status area."""
+    def countdown():
+        for i in range(seconds, 0, -1):
+            if i <= 3:
+                dramatic_status_update(f"🔥 {purpose}: {i} 🔥", delay=0.02)
+            elif i <= 5:
+                dramatic_status_update(f"⚡ {purpose}: {i} ⚡", delay=0.03)
+            else:
+                dramatic_status_update(f"⏰ {purpose}: {i}")
+            time.sleep(1)
+        dramatic_status_update(f"✨ {purpose} COMPLETE! ✨")
+    
+    threading.Thread(target=countdown, daemon=True).start()
 
 def start_usb_monitor():
     # Run the monitor in a separate thread so it doesn't block the GUI
+    dramatic_status_update("🔍 Initiating eternal vigil...")
     threading.Thread(target=monitor_usb_events, args=(update_usb_status,), daemon=True).start()
 
+# Create main window with MJOLNIR styling
 root = tk.Tk()
-root.title("MJOLNIR Control Panel")
+root.title("🔨 MJOLNIR Command Throne 🔨")
+root.geometry("600x700")
+mjolnir_style_window(root)
 
-status_label = tk.Label(root, text="No Trusted USB", bg="red", fg="white", font=("Arial", 12, "bold"), width=30)
-status_label.pack(pady=10)
+# Title with dramatic styling
+title_frame = tk.Frame(root, bg=MJOLNIR_COLORS['bg_primary'])
+title_frame.pack(pady=20)
 
-tk.Label(root, text="MJOLNIR Main Menu", font=("Arial", 16, "bold")).pack(pady=10)
+create_mjolnir_label(title_frame, "⚡ MJOLNIR ⚡", 24, 'gold').pack()
+create_mjolnir_label(title_frame, "Thor's Divine Security Hammer", 12, 'light').pack()
 
-tk.Button(root, text="Select USB Port/Mount", width=30, command=select_usb_port_mount).pack(pady=5)
-tk.Button(root, text="Select Files/Folders for Hash Generation", width=30, command=select_files_folders).pack(pady=5)
-tk.Button(root, text="Hash Format and Config", width=30, command=hash_format_config).pack(pady=5)
-tk.Button(root, text="Generate Hash for Selected Data", width=30, command=generate_hash).pack(pady=5)
-tk.Button(root, text="Schedule Periodic Hash Pulls", width=30, command=schedule_hash_pulls).pack(pady=5)
+# Status display with enhanced styling
+status_frame = tk.Frame(root, bg=MJOLNIR_COLORS['bg_primary'])
+status_frame.pack(pady=15)
 
-tk.Button(root, text="Exit", width=30, command=root.quit).pack(pady=20)
+status_label = tk.Label(status_frame, text="💀 MJOLNIR AWAITS THE WORTHY 💀", 
+                       bg=MJOLNIR_COLORS['danger_red'], fg=MJOLNIR_COLORS['text_light'], 
+                       font=("Arial", 12, "bold"), width=35, relief="raised", bd=3)
+status_label.pack(pady=5)
 
+# Status detail for dramatic updates
+status_detail_label = tk.Label(status_frame, text="🌙 The realm slumbers in anticipation...", 
+                              bg=MJOLNIR_COLORS['bg_primary'], fg=MJOLNIR_COLORS['text_gold'],
+                              font=("Arial", 10), width=50, wraplength=400)
+status_detail_label.pack(pady=5)
+
+# Main menu with enhanced styling
+menu_frame = tk.Frame(root, bg=MJOLNIR_COLORS['bg_primary'])
+menu_frame.pack(pady=20)
+
+create_mjolnir_label(menu_frame, "🛡️  DIVINE COMMAND CENTER 🛡️", 16, 'gold').pack(pady=15)
+
+# Enhanced buttons with MJOLNIR styling
+create_mjolnir_button(menu_frame, "🔗 Consecrate Sacred Ports", select_usb_port_mount, 35).pack(pady=8)
+create_mjolnir_button(menu_frame, "📦 Choose Artifacts to Guard", select_files_folders, 35).pack(pady=8)
+create_mjolnir_button(menu_frame, "⚙️  Configure Divine Magic", hash_format_config, 35).pack(pady=8)
+create_mjolnir_button(menu_frame, "🔨 Forge Protection Seals", generate_hash, 35, 'success').pack(pady=8)
+create_mjolnir_button(menu_frame, "📅 Schedule Sacred Rituals", schedule_hash_pulls, 35, 'warning').pack(pady=8)
+
+# Separation line
+separator = tk.Frame(root, height=2, bg=MJOLNIR_COLORS['accent_gold'])
+separator.pack(fill="x", padx=50, pady=20)
+
+# Exit button with dramatic styling
+create_mjolnir_button(root, "⚡ Return MJOLNIR to Slumber ⚡", root.quit, 30, 'danger').pack(pady=20)
+
+# Initialize the eternal watch
 start_usb_monitor()
 
 root.mainloop()
