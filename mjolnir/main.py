@@ -35,7 +35,7 @@ IMPORT_DIRS = {
 }
 
 
-EXPECTED_PORT = "5-9"  # Correct USB port ID
+# USB port is now configured via settings.json - no hardcoded value
 # ----------------------------
 
 gpg = gnupg.GPG(homedir=GPG_HOME)
@@ -125,7 +125,8 @@ def monitor_usb():
 
             log(f"USB device plugged in: {device_node} at {device_port}")
 
-            if EXPECTED_PORT not in device_port:
+            expected_port = get_expected_port()
+            if expected_port not in device_port:
                 log("Device in wrong port → backup trigger.")
 
                 if verify_usb_trust():
