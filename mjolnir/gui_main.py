@@ -9,6 +9,17 @@ from mjolnir.scheduler import periodic_hash_check
 from mjolnir.config import get_mandatory_files, get_selected_files, set_selected_files
 from mjolnir.hashing import generate_baseline
 
+# Import steganography tools
+try:
+    import sys
+    import os
+    # Add the parent directory to path to import cyberchef
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    from cyberchef.gui import SteganographyGUI
+    STEGANOGRAPHY_AVAILABLE = True
+except ImportError:
+    STEGANOGRAPHY_AVAILABLE = False
+
 def select_usb_port_mount():
     selected_port = select_usb_port()
     if not selected_port:
@@ -420,6 +431,20 @@ def schedule_hash_pulls():
     # Close button
     tk.Button(scheduler_window, text="Close", command=scheduler_window.destroy).pack(pady=10)
 
+def open_steganography_tools():
+    """Open the CyberChef steganography tools window."""
+    if not STEGANOGRAPHY_AVAILABLE:
+        messagebox.showerror("Not Available", 
+                           "Steganography tools are not available. Please install required dependencies:\n" +
+                           "pip install pillow numpy")
+        return
+    
+    try:
+        stego_gui = SteganographyGUI(root)
+        stego_gui.show_window()
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to open steganography tools: {e}")
+
 def update_usb_status(is_trusted):
     def set_status():
         if is_trusted:
@@ -447,6 +472,10 @@ tk.Button(root, text="Generate Hash for Selected Data", width=30, command=genera
 tk.Button(root, text="Verify Hash Integrity", width=30, command=verify_hash_integrity).pack(pady=5)
 tk.Button(root, text="Show Hash Status & Summary", width=30, command=show_hash_status).pack(pady=5)
 tk.Button(root, text="Schedule Periodic Hash Pulls", width=30, command=schedule_hash_pulls).pack(pady=5)
+
+# Add steganography tools button
+tk.Button(root, text="CyberChef Steganography Tools", width=30, command=open_steganography_tools, 
+          bg="lightcyan", font=("Arial", 10, "bold")).pack(pady=5)
 
 tk.Button(root, text="Exit", width=30, command=root.quit).pack(pady=20)
 

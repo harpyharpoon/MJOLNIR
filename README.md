@@ -32,7 +32,16 @@ MJOLNIR is a USB-based security tool designed for developers and security-consci
 ### 7. KeePass and Security Tool Integration
 - Optionally launches a secure password database (KeePassXC) and/or other security tools (like Wireshark, Cockpit) for rapid response.
 
-### 8. Team & Enterprise Integration ("USB Keyring" Mode)
+### 8. CyberChef Steganography Tools
+- **Image Steganography:** Hide and extract text messages in PNG, JPEG, and BMP images using LSB (Least Significant Bit) technique
+- **Audio Steganography:** Hide and extract text messages in WAV audio files with inaudible changes
+- **Text Encoding Utilities:** Binary and Base64 encoding/decoding tools
+- **File Analysis:** Analyze steganographic capacity and properties of media files
+- **User-Friendly GUI:** Tabbed interface for easy steganographic operations
+- **High Capacity:** Hide substantial amounts of data (entire documents in images, books in audio files)
+- **Security Features:** Invisible data hiding, automatic capacity checking, error handling
+
+### 9. Team & Enterprise Integration ("USB Keyring" Mode)
 - **Centralized management:** IT departments can configure teams of MJOLNIR USB keyrings.
 - **Networked sync:** Devices upload usage logs, password rotation status, and trigger events to an in-house server/dashboard over the secure company network.
 - **Audit & compliance:** Central dashboard monitors:
@@ -87,6 +96,8 @@ passwords:
 - **Strict Internet Access Control:** MJOLNIR will not connect to the internet unless both the designated USB and NFC authentication are present and validated.
 - **Expanded NFC Authentication:** For additional actions beyond shutdown/lockdown.
 - **Custom Scripts:** Allow IT teams to deploy custom response actions centrally.
+- **Advanced Steganography:** FFT-based frequency domain hiding, video steganography, and encrypted data hiding.
+- **Batch Steganography Operations:** Process multiple files simultaneously for efficient data hiding/extraction.
 
 ---
 
