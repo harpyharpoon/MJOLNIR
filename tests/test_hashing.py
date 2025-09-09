@@ -15,7 +15,7 @@ sys.modules['tkinter.simpledialog'] = MagicMock()
 sys.modules['tkinter.messagebox'] = MagicMock()
 sys.modules['pyudev'] = MagicMock()
 
-from mjolnir.hashing import hash_file, generate_baseline, compare_with_baseline
+from mjolnir.hashing import hash_file, generate_baseline, compare_with_baseline, generate_consolidated_hash, save_consolidated_hash, verify_consolidated_hash, get_hash_summary
 
 
 class TestHashing(unittest.TestCase):
@@ -180,6 +180,170 @@ class TestHashing(unittest.TestCase):
         
         # Should log mismatches detected
         mock_log.assert_any_call("[!] Hash mismatches detected:")
+    
+    @patch('mjolnir.hashing.get_baseline_hash_file')
+    @patch('mjolnir.hashing.log')
+    def test_generate_consolidated_hash_no_baseline(self, mock_log, mock_get_baseline):
+        """Test consolidated hash generation when no baseline exists."""
+        mock_get_baseline.return_value = os.path.join(self.test_dir, "nonexistent_baseline.json")
+        
+        result = generate_consolidated_hash()
+        
+        self.assertIsNone(result)
+        mock_log.assert_called_with("[!] No baseline hash file found. Generate baseline first.")
+    
+    @patch('mjolnir.hashing.get_baseline_hash_file')
+    @patch('mjolnir.hashing.log')
+    def test_generate_consolidated_hash_success(self, mock_log, mock_get_baseline):
+        """Test successful consolidated hash generation."""
+        # Create baseline file
+        baseline_file = os.path.join(self.test_dir, "baseline.json")
+        baseline_data = {
+            "TEST": {
+                "/path/file1.txt": "hash1",
+                "/path/file2.txt": "hash2"
+            },
+            "OTHER": {
+                "/other/file3.txt": "hash3"
+            }
+        }
+        with open(baseline_file, "w") as f:
+            json.dump(baseline_data, f)
+        
+        mock_get_baseline.return_value = baseline_file
+        
+        result = generate_consolidated_hash()
+        
+        self.assertIsNotNone(result)
+        self.assertIn("master_hash", result)
+        self.assertIn("file_count", result)
+        self.assertIn("hash_list", result)
+        self.assertEqual(result["file_count"], 3)
+        self.assertEqual(len(result["hash_list"]), 3)
+        
+        # Verify hash list is sorted consistently
+        expected_list = [
+            "/other/file3.txt:hash3",
+            "/path/file1.txt:hash1", 
+            "/path/file2.txt:hash2"
+        ]
+        self.assertEqual(result["hash_list"], expected_list)
+    
+    @patch('mjolnir.hashing.get_baseline_hash_file')
+    @patch('mjolnir.config.get_usb_mount')
+    @patch('mjolnir.hashing.log')
+    def test_save_consolidated_hash_success(self, mock_log, mock_get_mount, mock_get_baseline):
+        """Test successful consolidated hash saving."""
+        # Create baseline file
+        baseline_file = os.path.join(self.test_dir, "baseline.json")
+        baseline_data = {
+            "TEST": {
+                self.test_file: hash_file(self.test_file)
+            }
+        }
+        with open(baseline_file, "w") as f:
+            json.dump(baseline_data, f)
+        
+        mock_get_baseline.return_value = baseline_file
+        mock_get_mount.return_value = self.test_dir
+        
+        result = save_consolidated_hash()
+        
+        self.assertIsNotNone(result)
+        expected_file = os.path.join(self.test_dir, "consolidated_hashes.json")
+        self.assertEqual(result, expected_file)
+        self.assertTrue(os.path.exists(expected_file))
+        
+        # Verify file content
+        with open(expected_file, "r") as f:
+            consolidated_data = json.load(f)
+        
+        self.assertIn("master_hash", consolidated_data)
+        self.assertIn("file_count", consolidated_data)
+        self.assertIn("hash_list", consolidated_data)
+    
+    @patch('mjolnir.hashing.get_baseline_hash_file')
+    @patch('mjolnir.config.get_usb_mount')
+    @patch('mjolnir.hashing.log')
+    def test_verify_consolidated_hash_success(self, mock_log, mock_get_mount, mock_get_baseline):
+        """Test successful consolidated hash verification."""
+        # Create baseline file
+        baseline_file = os.path.join(self.test_dir, "baseline.json")
+        file_hash = hash_file(self.test_file)
+        baseline_data = {
+            "TEST": {
+                self.test_file: file_hash
+            }
+        }
+        with open(baseline_file, "w") as f:
+            json.dump(baseline_data, f)
+        
+        # Create consolidated hash file
+        consolidated_file = os.path.join(self.test_dir, "consolidated_hashes.json")
+        consolidated_data = {
+            "master_hash": "test_master_hash",
+            "file_count": 1,
+            "hash_list": [f"{self.test_file}:{file_hash}"]
+        }
+        
+        # Calculate correct master hash
+        import hashlib
+        master_hash_data = f"{self.test_file}:{file_hash}"
+        correct_master_hash = hashlib.sha256(master_hash_data.encode()).hexdigest()
+        consolidated_data["master_hash"] = correct_master_hash
+        
+        with open(consolidated_file, "w") as f:
+            json.dump(consolidated_data, f)
+        
+        mock_get_baseline.return_value = baseline_file
+        mock_get_mount.return_value = self.test_dir
+        
+        result = verify_consolidated_hash()
+        
+        self.assertTrue(result)
+        mock_log.assert_any_call("✓ Consolidated hash verification PASSED")
+    
+    @patch('mjolnir.hashing.get_baseline_hash_file')
+    @patch('mjolnir.hashing.log')
+    def test_get_hash_summary_no_baseline(self, mock_log, mock_get_baseline):
+        """Test hash summary when no baseline exists."""
+        mock_get_baseline.return_value = os.path.join(self.test_dir, "nonexistent_baseline.json")
+        
+        result = get_hash_summary()
+        
+        self.assertFalse(result["baseline_exists"])
+        self.assertEqual(result["file_count"], 0)
+        self.assertEqual(result["categories"], {})
+        self.assertIsNone(result["consolidated_hash"])
+    
+    @patch('mjolnir.hashing.get_baseline_hash_file')
+    @patch('mjolnir.hashing.log')
+    def test_get_hash_summary_with_baseline(self, mock_log, mock_get_baseline):
+        """Test hash summary with existing baseline."""
+        # Create baseline file
+        baseline_file = os.path.join(self.test_dir, "baseline.json")
+        baseline_data = {
+            "TEST": {
+                "/path/file1.txt": "hash1",
+                "/path/file2.txt": "hash2"
+            },
+            "OTHER": {
+                "/other/file3.txt": "hash3"
+            }
+        }
+        with open(baseline_file, "w") as f:
+            json.dump(baseline_data, f)
+        
+        mock_get_baseline.return_value = baseline_file
+        
+        result = get_hash_summary()
+        
+        self.assertTrue(result["baseline_exists"])
+        self.assertEqual(result["file_count"], 3)
+        self.assertEqual(result["categories"]["TEST"], 2)
+        self.assertEqual(result["categories"]["OTHER"], 1)
+        self.assertIsNotNone(result["consolidated_hash"])
+        self.assertIsNotNone(result["last_updated"])
 
 
 if __name__ == '__main__':

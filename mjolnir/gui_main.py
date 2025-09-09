@@ -3,7 +3,7 @@ from tkinter import messagebox, filedialog, simpledialog, ttk
 import threading
 from .usb_monitor import monitor_usb_events
 from mjolnir.usb import select_usb_port, select_usb_mount, save_selected_settings
-from mjolnir.hashing import generate_baseline, compare_with_baseline
+from mjolnir.hashing import generate_baseline, compare_with_baseline, save_consolidated_hash, verify_consolidated_hash, get_hash_summary
 from mjolnir.scheduler import periodic_hash_check
 # from mjolnir.backup import backup_files
 from mjolnir.config import get_mandatory_files, get_selected_files, set_selected_files
@@ -150,9 +150,144 @@ def generate_hash():
 
     try:
         generate_baseline()
-        messagebox.showinfo("Generate Hash", "Hash generation completed successfully.")
+        # Also generate consolidated hash
+        consolidated_file = save_consolidated_hash()
+        if consolidated_file:
+            messagebox.showinfo("Generate Hash", 
+                              "Hash generation completed successfully.\n" +
+                              f"Baseline and consolidated hashes saved.\n" +
+                              f"Consolidated hash file: {os.path.basename(consolidated_file)}")
+        else:
+            messagebox.showinfo("Generate Hash", "Baseline hash generation completed successfully.")
     except Exception as e:
         messagebox.showerror("Generate Hash", f"Error during hash generation:\n{e}")
+
+def verify_hash_integrity():
+    """Verify hash integrity using consolidated hash."""
+    try:
+        # First show current hash summary
+        summary = get_hash_summary()
+        
+        if not summary["baseline_exists"]:
+            messagebox.showwarning("Verify Integrity", "No baseline hash found. Generate hashes first.")
+            return
+        
+        summary_text = f"Hash Summary:\n"
+        summary_text += f"Total files: {summary['file_count']}\n"
+        summary_text += f"Categories: {len(summary['categories'])}\n"
+        for category, count in summary['categories'].items():
+            summary_text += f"  - {category}: {count} files\n"
+        
+        if summary['consolidated_hash']:
+            summary_text += f"\nConsolidated hash: {summary['consolidated_hash'][:16]}...\n"
+        
+        summary_text += "\nVerifying integrity..."
+        
+        # Show summary first
+        messagebox.showinfo("Hash Summary", summary_text)
+        
+        # Perform verification
+        success = verify_consolidated_hash()
+        
+        if success:
+            messagebox.showinfo("Verification Success", 
+                              "✓ Hash verification PASSED\n" +
+                              "All files match the stored baseline.")
+        else:
+            messagebox.showerror("Verification Failed", 
+                               "✗ Hash verification FAILED\n" +
+                               "Some files have been modified or are missing.\n" +
+                               "Check the console output for details.")
+            
+    except Exception as e:
+        messagebox.showerror("Verification Error", f"Error during verification:\n{e}")
+
+def show_hash_status():
+    """Show detailed hash status window."""
+    status_window = tk.Toplevel(root)
+    status_window.title("Hash Status & Summary")
+    status_window.geometry("600x400")
+    status_window.resizable(True, True)
+    
+    # Make window modal
+    status_window.transient(root)
+    status_window.grab_set()
+    
+    # Title
+    tk.Label(status_window, text="Hash Status & Summary", font=("Arial", 14, "bold")).pack(pady=10)
+    
+    # Create scrollable text widget
+    text_frame = tk.Frame(status_window)
+    text_frame.pack(pady=10, padx=20, fill="both", expand=True)
+    
+    text_widget = tk.Text(text_frame, wrap=tk.WORD, font=("Courier", 10))
+    scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+    text_widget.configure(yscrollcommand=scrollbar.set)
+    
+    text_widget.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    
+    # Get hash summary
+    try:
+        summary = get_hash_summary()
+        
+        status_text = "=== MJOLNIR Hash Status ===\n\n"
+        
+        if summary["baseline_exists"]:
+            status_text += f"✓ Baseline hash file exists\n"
+            status_text += f"📁 Total files monitored: {summary['file_count']}\n"
+            status_text += f"📂 Categories: {len(summary['categories'])}\n\n"
+            
+            status_text += "Category breakdown:\n"
+            for category, count in summary['categories'].items():
+                status_text += f"  • {category}: {count} files\n"
+            
+            if summary['consolidated_hash']:
+                status_text += f"\n🔐 Consolidated master hash:\n"
+                status_text += f"   {summary['consolidated_hash']}\n"
+            
+            if summary['last_updated']:
+                import datetime
+                last_update = datetime.datetime.fromtimestamp(summary['last_updated'])
+                status_text += f"\n🕒 Last updated: {last_update.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        else:
+            status_text += "⚠️  No baseline hash file found\n"
+            status_text += "    Run 'Generate Hash for Selected Data' first\n"
+        
+        # Check for consolidated hash file
+        try:
+            from mjolnir.config import get_usb_mount
+            usb_mount = get_usb_mount()
+            if usb_mount:
+                consolidated_file = os.path.join(usb_mount, "consolidated_hashes.json")
+                if os.path.exists(consolidated_file):
+                    status_text += f"\n✓ Consolidated hash file exists on USB\n"
+                    status_text += f"   Location: {consolidated_file}\n"
+                else:
+                    status_text += f"\n⚠️  No consolidated hash file on USB\n"
+                    status_text += f"   Generate hashes to create it\n"
+            else:
+                status_text += f"\n⚠️  USB mount not configured\n"
+        except Exception as e:
+            status_text += f"\n❌ Error checking USB status: {e}\n"
+            
+        text_widget.insert("1.0", status_text)
+        text_widget.config(state="disabled")
+        
+    except Exception as e:
+        error_text = f"❌ Error loading hash status:\n{e}"
+        text_widget.insert("1.0", error_text)
+        text_widget.config(state="disabled")
+    
+    # Buttons
+    button_frame = tk.Frame(status_window)
+    button_frame.pack(pady=10)
+    
+    tk.Button(button_frame, text="Refresh", 
+              command=lambda: status_window.destroy() or show_hash_status()).pack(side="left", padx=5)
+    tk.Button(button_frame, text="Verify Integrity", 
+              command=lambda: status_window.destroy() or verify_hash_integrity()).pack(side="left", padx=5)
+    tk.Button(button_frame, text="Close", command=status_window.destroy).pack(side="left", padx=5)
 
 
 def schedule_hash_pulls():
@@ -309,6 +444,8 @@ tk.Button(root, text="Select USB Port/Mount", width=30, command=select_usb_port_
 tk.Button(root, text="Select Files/Folders for Hash Generation", width=30, command=select_files_folders).pack(pady=5)
 tk.Button(root, text="Hash Format and Config", width=30, command=hash_format_config).pack(pady=5)
 tk.Button(root, text="Generate Hash for Selected Data", width=30, command=generate_hash).pack(pady=5)
+tk.Button(root, text="Verify Hash Integrity", width=30, command=verify_hash_integrity).pack(pady=5)
+tk.Button(root, text="Show Hash Status & Summary", width=30, command=show_hash_status).pack(pady=5)
 tk.Button(root, text="Schedule Periodic Hash Pulls", width=30, command=schedule_hash_pulls).pack(pady=5)
 
 tk.Button(root, text="Exit", width=30, command=root.quit).pack(pady=20)
